@@ -72,8 +72,8 @@ const gridConfig: GridConfig<DemoData> = {
   onSelectionChange(sel) {
     console.error(sel);
   },
-  fetchDataFn(startRow, endRow) {
-    return mockApi_GetDataByRange(startRow, endRow);
+  fetchDataFn(rows: number[]) {
+    return mockApi_GetRows(rows);
   },
 };
 
@@ -87,14 +87,15 @@ async function mockApi_GetUpdatedInfo(id: string | number) {
     rowAt: Math.floor(Math.random() * total),
   };
 }
-async function mockApi_GetDataByRange(startRow: number, endRow: number) {
-  return new Array(endRow - startRow + 1).fill(0).map((_, i) => {
+async function mockApi_GetRows(rows: number[]) {
+  console.log('mock api::GetRows', rows);
+  return rows.map((row) => {
     const d: DemoData = {
-      id: `${startRow + i}`,
-      name: `数据-${startRow + i}`,
+      id: `row-${row}`,
+      name: `数据-${row}`,
     };
     columns.forEach((col, i) => {
-      d[col.key] = `列-${i + 1}`;
+      d[col.key] = i === 0 ? `数据-${i}` : `列-${i}`;
     });
     return d;
   });
@@ -105,12 +106,12 @@ export const App = defineComponent(() => {
   const update = async () => {
     if (!grid.value) return;
     const vr = grid.value.getVisualRange();
-    const firstId = grid.value.getId(vr.start);
-    if (!firstId) {
+    const data = grid.value.getDataAt(vr.start);
+    if (!data) {
       // 数据变更时表格第一行数据还未加载，忽略本次变更
       return;
     }
-    const info = await mockApi_GetUpdatedInfo(firstId);
+    const info = await mockApi_GetUpdatedInfo(data.id);
     grid.value.refresh(info.total, Math.max(info.rowAt, 0));
   };
   onMounted(() => {

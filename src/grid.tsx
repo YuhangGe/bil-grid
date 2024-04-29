@@ -7,12 +7,12 @@ import { OperateCol } from './operate';
 import { SelectCol } from './select';
 import { TbHeader } from './header';
 import { DataStore } from './data';
-import { render } from './render';
+import { Renderer } from './render';
 
 const GridComponent = defineComponent(
   <T extends GridData>(props: { config: GridConfig<T> }, { expose }) => {
     const $cav = ref<HTMLCanvasElement>();
-    const store = new DataStore();
+    const store = new DataStore(props.config);
     const state = reactive<RenderState>({
       visualWidth: 0,
       visualHeight: 0,
@@ -20,23 +20,25 @@ const GridComponent = defineComponent(
       startRow: 0,
       endRow: -1,
     });
+    const renderer = new Renderer($cav, props.config, state, store);
 
     provide('store', store);
     provide('state', state);
+    provide('renderer', renderer);
 
     const resize = () => {
       const $canvas = $cav.value;
       if (!$canvas) return;
+
       state.visualHeight = $canvas.offsetHeight;
-      state.visualWidth = $canvas.offsetWidth;
-      $canvas.width = state.visualWidth;
       $canvas.height = state.visualHeight;
-      const ctx = $canvas.getContext('2d');
-      if (!ctx) return;
-      render(props.config, ctx, state, store);
+
+      renderer.render();
     };
     onMounted(() => {
       if (!$cav.value) return;
+      // $cav.value.style.width = `${state.visualWidth}px`;
+      // $cav.value.width = state.visualWidth;
       resize(); // initialze resize and render
     });
     // const setTotal = (total: number) => {
@@ -51,23 +53,21 @@ const GridComponent = defineComponent(
     const getVisualRange = () => {
       return { start: state.startRow, end: state.endRow };
     };
-    const getId = (rowAt: number): T | null => {
+    const getDataAt = (rowAt: number): T | null => {
       return store.getAt(rowAt) as T;
     };
     const refresh = (total: number, scrollToRowAt: number) => {
       state.total = total;
       store.clear();
       state.startRow = scrollToRowAt;
-      const ctx = $cav.value?.getContext('2d');
-      if (!ctx) return;
-      render(props.config, ctx, state, store);
+      renderer.render();
     };
     expose({
       // setTotal,
       // fillData,
       getSelection,
       getVisualRange,
-      getId,
+      getDataAt,
       refresh,
     });
     return () => {
@@ -88,7 +88,7 @@ const GridComponent = defineComponent(
                   backgroundColor: props.config.backgroundColor,
                 }}
                 ref={$cav}
-                class='w-full flex-1 overflow-hidden'
+                class='h-full flex-1 overflow-auto'
               />
             </div>
             <OperateCol config={props.config} />
@@ -109,7 +109,7 @@ interface GridInstance {
   // getSelection: () => GridSelection;
   // clearData: (reRender?: boolean) => void;
   getVisualRange: () => RowRange;
-  getId: (rowAt: number) => string | number | null | undefined;
+  getDataAt: <T extends GridData>(rowAt: number) => T | null | undefined;
   /** 重置 total，清空缓存数据，然后滚动到指定行 */
   refresh: (total: number, scrollToRowAt: number) => void;
 }

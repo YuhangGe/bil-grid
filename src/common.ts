@@ -9,6 +9,7 @@ export interface GridColumn<T extends GridData> {
 }
 export interface GridData {
   id: string;
+  [key: string]: unknown;
 }
 export interface GridConfig<T extends GridData> {
   width?: string;
@@ -40,7 +41,7 @@ export interface GridConfig<T extends GridData> {
     renderFn: (id?: string | number) => VNode;
   };
   columns: GridColumn<T>[];
-  fetchDataFn: (startRow: number, endRow: number) => Promise<T[]>;
+  fetchDataFn: (rows: number[]) => Promise<T[]>;
 }
 
 export interface RowRange {

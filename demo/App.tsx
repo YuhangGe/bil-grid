@@ -1,5 +1,5 @@
 import { defineComponent, onMounted, ref } from 'vue';
-import { Button, Checkbox } from 'ant-design-vue';
+import { Button } from 'ant-design-vue';
 import type { GridColumn, GridConfig } from '../src';
 import { Grid } from '../src';
 
@@ -23,79 +23,23 @@ const columns: GridColumn<DemoData>[] = [
     };
   }),
 ];
+
 const gridConfig: GridConfig<DemoData> = {
-  height: '300px',
-  scrollbar: {
-    buttonLength: 60,
-    buttonBreadth: 30,
-    backgroundColor: 'rgba(0,0,0,0.3)',
-    buttonColor: 'rgba(0,0,0,0.5)',
-  },
+  height: '1600px',
   backgroundColor: 'rgba(0,0,255,0.6)',
-  header: {
-    height: 40,
-    backgroundColor: 'rgba(0,0,255,0.8)',
-  },
-  row: {
-    height: 50,
-    expandHeight: 120,
-  },
-  selectColumn: {
-    width: 80,
-    renderFn(selected, id) {
-      return (
-        <Checkbox
-          checked={selected}
-          onChange={(v) => {
-            console.error('checked', id, v);
-          }}
-        />
-      );
-    },
-  },
-  operateColumn: {
-    width: 100,
-    renderFn(id) {
-      return (
-        <Button
-          type='text'
-          onClick={() => {
-            console.error('删除', id);
-          }}
-        >
-          删除
-        </Button>
-      );
-    },
-  },
+  rowHeight: 50,
   columns,
-  onSelectionChange(sel) {
-    console.error(sel);
-  },
-  fetchDataFn(rows: number[]) {
-    return mockApi_GetRows(rows);
-  },
 };
 
-let total = 2000;
-
-async function mockApi_GetUpdatedInfo(id: string | number) {
-  console.error('find by id', id);
-  total += 10;
-  return {
-    total,
-    rowAt: Math.floor(Math.random() * total),
-  };
-}
-async function mockApi_GetRows(rows: number[]) {
-  console.log('mock api::GetRows', rows);
+function mockRows(rows: number[]) {
   return rows.map((row) => {
     const d: DemoData = {
       id: `row-${row}`,
       name: `数据-${row}`,
     };
     columns.forEach((col, i) => {
-      d[col.key] = i === 0 ? `数据-${i}` : `列-${i}`;
+      if (i === 0) return;
+      d[col.key] = `列-${row}-${i}`;
     });
     return d;
   });
@@ -103,20 +47,13 @@ async function mockApi_GetRows(rows: number[]) {
 
 export const App = defineComponent(() => {
   const grid = ref<Grid>();
-  const update = async () => {
+  const update = () => {
     if (!grid.value) return;
-    const vr = grid.value.getVisualRange();
-    const data = grid.value.getDataAt(vr.start);
-    if (!data) {
-      // 数据变更时表格第一行数据还未加载，忽略本次变更
-      return;
-    }
-    const info = await mockApi_GetUpdatedInfo(data.id);
-    grid.value.refresh(info.total, Math.max(info.rowAt, 0));
+    const data = mockRows(new Array(50).fill(0).map(() => Math.floor(Math.random() * 0xff)));
+    grid.value.setData(data);
   };
   onMounted(() => {
-    if (!grid.value) return;
-    grid.value.refresh(total, 0);
+    update();
   });
 
   return () => {
@@ -129,10 +66,10 @@ export const App = defineComponent(() => {
               void update();
             }}
           >
-            数据发生变更
+            变更数据
           </Button>
         </div>
-        <Grid ref={grid} config={gridConfig} class='border border-solid border-gray-300' />
+        <Grid ref={grid} config={gridConfig} />
       </div>
     );
   };

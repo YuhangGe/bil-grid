@@ -38,13 +38,7 @@ export const SelectCol = defineComponent(
           class='flex h-full flex-shrink-0 flex-col overflow-hidden'
           style={{ width: `${width}px` }}
         >
-          <div
-            class='w-full'
-            style={{ height: `${headerHeight}px`, backgroundColor: headerBg }}
-          ></div>
-          <div>
-            <div class='flex w-full flex-col'>
-              {items.value.map((item) => (
+          {items.value.map((item) => (
                 <div
                   key={item.__id}
                   style={{
@@ -56,8 +50,6 @@ export const SelectCol = defineComponent(
                   {renderFn(item.__sel, item.id)}
                 </div>
               ))}
-            </div>
-          </div>
         </div>
       );
     };

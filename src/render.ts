@@ -1,40 +1,35 @@
 import type { Ref } from 'vue';
-import type { GridConfig, GridData, RenderState } from './common';
-import type { DataStore } from './data';
+import type { GridConfig, GridData } from './common';
 
 export class Renderer<T extends GridData> {
   #cav: Ref<HTMLCanvasElement | undefined>;
   #cfg: GridConfig<T>;
-  #state: RenderState;
-  #store: DataStore<T>;
+  #dt: T[];
 
-  constructor(
-    canvas: Ref<HTMLCanvasElement | undefined>,
-    config: GridConfig<T>,
-    state: RenderState,
-    store: DataStore<T>,
-  ) {
+  constructor(canvas: Ref<HTMLCanvasElement | undefined>, config: GridConfig<T>) {
     this.#cav = canvas;
     this.#cfg = config;
-    this.#state = state;
-    this.#store = store;
-
-    store.onUpdated(() => this.render());
+    this.#dt = [];
+  }
+  setData(data: T[], rerender = true) {
+    this.#dt = data;
+    if (rerender) this.render();
   }
   render() {
-    const ctx = this.#cav.value?.getContext('2d');
+    const $el = this.#cav.value;
+    if (!$el) throw 'unexpected';
+    const ctx = $el.getContext('2d');
     if (!ctx) throw 'unexpected';
-    const {
-      columns,
-      row: { height, expandHeight },
-    } = this.#cfg;
-    const { visualHeight, visualWidth, total, startRow } = this.#state;
-    const store = this.#store;
-    ctx.clearRect(0, 0, visualWidth, visualHeight);
+    const { columns, rowHeight } = this.#cfg;
+    const vw = $el.width;
+    const vh = $el.height;
+    ctx.clearRect(0, 0, vw, vh);
+    const data = this.#dt;
 
-    if (total === 0) {
+    if (!data.length) {
       return;
     }
+
     ctx.save();
     ctx.fillStyle = '#333';
     ctx.textAlign = 'center';
@@ -42,36 +37,32 @@ export class Renderer<T extends GridData> {
     ctx.font = '14px Arial';
 
     let y = 0;
-    let row = startRow;
-    while (y < visualHeight && row < total) {
-      const data = store.getAt(row);
-      const rowH = data && store.checkSelected(data) ? expandHeight : height;
-      // console.log('sdraw row:', row);
-
-      if (!data) {
-        store.fetchAt(row);
-      } else {
-        let x = 0;
-        columns.forEach((column) => {
-          const tw = column.width;
-          const tx = x + tw / 2;
-          const ty = y + rowH / 2;
-          const renderFn = column.render;
-          if (renderFn) {
-            renderFn(ctx, data);
-          } else {
-            const txt = `${data[column.key]}`;
-
-            ctx.fillText(txt, tx, ty, tw);
-          }
-          x += tw;
-        });
+    for (let row = 0; row < data.length; row++) {
+      const dt = data[row];
+      const rowH = dt.__rowHeight ?? rowHeight;
+      let x = 0;
+      for (let col = 0; col < columns.length; col++) {
+        const column = columns[col];
+        const tw = column.width;
+        const tx = x + tw / 2;
+        const ty = y + rowH / 2;
+        const renderFn = column.render;
+        if (renderFn) {
+          renderFn(ctx, dt);
+        } else {
+          const txt = `${dt[column.key]}`;
+          ctx.fillText(txt, tx, ty, tw);
+        }
+        x += tw;
+        if (x > vw) {
+          break;
+        }
       }
-
-      row += 1;
       y += rowH;
+      if (y > vh) {
+        console.log(row, 'rows rendered');
+        break;
+      }
     }
-    this.#state.endRow = row;
-    ctx.restore();
   }
 }

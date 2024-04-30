@@ -1,5 +1,3 @@
-import type { VNode } from 'vue';
-
 export interface GridColumn<T extends GridData> {
   key: string;
   title: string;
@@ -8,40 +6,18 @@ export interface GridColumn<T extends GridData> {
   render?: (ctx: CanvasRenderingContext2D, data: T) => void;
 }
 export interface GridData {
+  __rowHeight?: number;
   id: string;
   [key: string]: unknown;
 }
 export interface GridConfig<T extends GridData> {
   width?: string;
   height?: string;
-  scrollbar: {
-    buttonBreadth: number;
-    buttonLength: number;
-    buttonColor: string;
-    backgroundColor: string;
-  };
+
   backgroundColor: string;
-  header: {
-    height: number;
-    backgroundColor: string;
-  };
-  row: {
-    height: number;
-    expandHeight: number;
-  };
-  selectColumn: {
-    width: number;
-    /** 如果 id 不存在，说明数据还未加载 */
-    renderFn: (selected: boolean, id?: string | number) => VNode;
-  };
-  onSelectionChange: (s: GridSelection) => void;
-  operateColumn: {
-    width: number;
-    /** 如果 id 不存在，说明数据还未加载 */
-    renderFn: (id?: string | number) => VNode;
-  };
+  rowHeight: number;
+
   columns: GridColumn<T>[];
-  fetchDataFn: (rows: number[]) => Promise<T[]>;
 }
 
 export interface RowRange {

@@ -42,7 +42,7 @@ export const HorizionScrollbar = defineComponent(
           ref={el}
           style={{ height: `${config.buttonBreadth}px`, backgroundColor: config.backgroundColor }}
         >
-          <div
+          <divw
             onMousedown={(evt) => {
               md.value.sx = evt.pageX;
               md.value.tx = tx.value;
